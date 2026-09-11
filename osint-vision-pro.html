@@ -1,0 +1,998 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Image Forensics Pro · Deep Visual Intelligence & AI Provenance Suite</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --bg:          #030712;
+    --surface:     rgba(11, 19, 38, 0.75);
+    --panel:       rgba(17, 27, 54, 0.85);
+    --border:      rgba(0, 243, 255, 0.18);
+    --border-glow: rgba(0, 243, 255, 0.45);
+    --accent:      #00f3ff;
+    --accent-glow: rgba(0, 243, 255, 0.4);
+    --accent2:     #9d4edd;
+    --accent2-glow:rgba(157, 78, 221, 0.4);
+    --green:       #00ff9d;
+    --warn:        #ffb703;
+    --danger:      #ff2e63;
+    --text:        #f0f6fc;
+    --muted:       #7d91b8;
+    --dim:         #1e2942;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Outfit', -apple-system, sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  /* ── Motion Graphics Background Mesh & Particles ── */
+  .bg-grid {
+    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+    background-image: 
+      linear-gradient(to right, rgba(0, 243, 255, 0.03) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(0, 243, 255, 0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    z-index: -2;
+    pointer-events: none;
+  }
+
+  .orb {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(120px);
+    z-index: -1;
+    pointer-events: none;
+    opacity: 0.5;
+    animation: floatOrb 18s ease-in-out infinite alternate;
+  }
+  .orb-1 { top: -10%; left: 15%; width: 500px; height: 500px; background: radial-gradient(circle, #00f3ff 0%, transparent 70%); }
+  .orb-2 { bottom: -10%; right: 10%; width: 600px; height: 600px; background: radial-gradient(circle, #7928ca 0%, transparent 70%); animation-delay: -9s; }
+  .orb-3 { top: 40%; left: 40%; width: 400px; height: 400px; background: radial-gradient(circle, #00ff9d 0%, transparent 70%); animation-delay: -5s; }
+
+  @keyframes floatOrb {
+    0% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(60px, -40px) scale(1.15); }
+    100% { transform: translate(-40px, 50px) scale(0.9); }
+  }
+
+  /* ── Header ── */
+  .hdr {
+    background: rgba(8, 14, 28, 0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 28px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    position: sticky; top: 0; z-index: 100;
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+  }
+  .hdr-logo {
+    width: 44px; height: 44px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; flex-shrink: 0;
+    box-shadow: 0 0 25px var(--accent-glow);
+    animation: logoPulse 3s infinite alternate;
+  }
+  @keyframes logoPulse {
+    0% { box-shadow: 0 0 15px var(--accent-glow); }
+    100% { box-shadow: 0 0 35px var(--accent2-glow); }
+  }
+  .hdr-title {
+    font-size: 19px; font-weight: 800; letter-spacing: -0.4px;
+    background: linear-gradient(135deg, #ffffff 30%, var(--accent) 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .hdr-sub { font-size: 11.5px; color: var(--muted); margin-top: 1px; font-weight: 500; }
+
+  .hdr-actions { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+  
+  .hdr-badge {
+    background: rgba(0, 255, 157, 0.08);
+    border: 1px solid rgba(0, 255, 157, 0.35);
+    color: var(--green);
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 11.5px; font-weight: 700;
+    display: flex; align-items: center; gap: 6px;
+    box-shadow: 0 0 12px rgba(0, 255, 157, 0.15);
+  }
+  .pulse-dot {
+    width: 7px; height: 7px; border-radius: 50%; background: var(--green);
+    box-shadow: 0 0 10px var(--green);
+    animation: pulseDot 1.5s infinite;
+  }
+  @keyframes pulseDot { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(1.3); } }
+
+  .hdr-c2pa-badge {
+    background: rgba(157, 78, 221, 0.12);
+    border: 1px solid rgba(157, 78, 221, 0.4);
+    color: #c77dff;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 11.5px; font-weight: 700;
+    display: flex; align-items: center; gap: 6px;
+  }
+
+  .chat-toggle-btn {
+    background: linear-gradient(135deg, var(--accent2), #5a189a);
+    color: #fff; border: none;
+    padding: 9px 20px; border-radius: 10px;
+    font-size: 12.5px; font-weight: 800;
+    cursor: pointer; display: flex; align-items: center; gap: 8px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 0 20px var(--accent2-glow);
+  }
+  .chat-toggle-btn:hover {
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 0 30px var(--accent2-glow);
+  }
+
+  /* ── Layout ── */
+  .layout { display: flex; max-width: 1520px; margin: 0 auto; min-height: calc(100vh - 73px); }
+  .main-content { flex: 1; padding: 24px 24px; min-width: 0; }
+
+  /* ── Futuristic Scanner Upload Box ── */
+  #uploadWrap {
+    position: relative;
+    border: 2px dashed var(--border);
+    border-radius: 24px;
+    padding: 65px 36px;
+    text-align: center;
+    cursor: pointer;
+    background: var(--surface);
+    backdrop-filter: blur(16px);
+    user-select: none;
+    margin-bottom: 24px;
+    overflow: hidden;
+    transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  }
+  #uploadWrap:hover, #uploadWrap.drag {
+    border-color: var(--accent);
+    background: rgba(0, 243, 255, 0.04);
+    box-shadow: 0 0 40px var(--accent-glow);
+    transform: translateY(-3px);
+  }
+
+  /* Laser Scan Animation Line */
+  .scan-line {
+    position: absolute; top: 0; left: -100%; width: 100%; height: 3px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    box-shadow: 0 0 15px var(--accent);
+    animation: scanSweep 3.5s ease-in-out infinite;
+  }
+  @keyframes scanSweep {
+    0% { top: 0; opacity: 0; }
+    30% { opacity: 1; }
+    100% { top: 100%; opacity: 0; }
+  }
+
+  #uploadWrap .up-icon {
+    font-size: 60px; margin-bottom: 16px; display: inline-block;
+    filter: drop-shadow(0 0 20px var(--accent-glow));
+    animation: floatIcon 4s ease-in-out infinite alternate;
+  }
+  @keyframes floatIcon { 0% { transform: translateY(0); } 100% { transform: translateY(-8px); } }
+
+  #uploadWrap h2 { font-size: 22px; font-weight: 800; margin-bottom: 10px; letter-spacing: -0.3px; }
+  #uploadWrap p { color: var(--muted); font-size: 13.5px; line-height: 1.6; max-width: 560px; margin: 0 auto; }
+  
+  .up-btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: linear-gradient(135deg, var(--accent), #0077b6);
+    color: #020617; border: none;
+    padding: 12px 30px; border-radius: 12px;
+    font-weight: 800; font-size: 13.5px;
+    cursor: pointer; margin-top: 24px;
+    box-shadow: 0 0 25px var(--accent-glow);
+    transition: all 0.3s;
+  }
+  .up-btn:hover { transform: scale(1.04); box-shadow: 0 0 35px var(--accent-glow); }
+
+  /* ── Radar Visual Graphic ── */
+  .radar-box {
+    width: 140px; height: 140px; border-radius: 50%;
+    border: 2px solid rgba(0, 243, 255, 0.3);
+    position: relative; margin: 0 auto 20px;
+    background: radial-gradient(circle, rgba(0,243,255,0.05) 0%, transparent 70%);
+    overflow: hidden;
+  }
+  .radar-sweep {
+    position: absolute; top: 50%; left: 50%; width: 50%; height: 50%;
+    background: conic-gradient(from 0deg, rgba(0, 243, 255, 0.6), transparent 60%);
+    transform-origin: 0% 0%;
+    animation: radarRotate 2.5s linear infinite;
+  }
+  @keyframes radarRotate { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+  .radar-crosshair {
+    position: absolute; top: 0; left: 50%; width: 1px; height: 100%; background: rgba(0,243,255,0.2);
+  }
+  .radar-crosshair-h {
+    position: absolute; top: 50%; left: 0; width: 100%; height: 1px; background: rgba(0,243,255,0.2);
+  }
+
+  /* ── Dashboard Container ── */
+  #dash { display: none; flex-direction: column; gap: 20px; }
+  #dash.on { display: flex; animation: fadeIn 0.4s ease-out; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* Preview Bar */
+  .prev-bar {
+    background: var(--surface);
+    backdrop-filter: blur(16px);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 18px;
+    display: flex; gap: 20px; align-items: flex-start;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  }
+  .prev-img-wrap { position: relative; flex-shrink: 0; }
+  .prev-img {
+    width: 110px; height: 110px; object-fit: cover;
+    border-radius: 14px; border: 2px solid var(--border-glow);
+    background: var(--panel); box-shadow: 0 0 20px rgba(0,243,255,0.2);
+  }
+  .prev-info { flex: 1; min-width: 0; }
+  .prev-name { font-size: 17px; font-weight: 800; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .prev-meta { font-size: 12.5px; color: var(--muted); margin-bottom: 12px; font-family: 'JetBrains Mono', monospace; }
+  .pills { display: flex; flex-wrap: wrap; gap: 8px; }
+  .pill {
+    padding: 5px 12px; border-radius: 20px; font-size: 11.5px; font-weight: 700;
+    display: inline-flex; align-items: center; gap: 6px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .pill-run { background: rgba(255, 183, 3, 0.15); border: 1px solid rgba(255, 183, 3, 0.4); color: var(--warn); }
+  .pill-ok  { background: rgba(0, 255, 157, 0.15); border: 1px solid rgba(0, 255, 157, 0.4); color: var(--green); }
+  .pill-err { background: rgba(255, 46, 99, 0.15);  border: 1px solid rgba(255, 46, 99, 0.4); color: var(--danger); }
+  
+  .reset-link { color: var(--accent); font-size: 12.5px; cursor: pointer; text-decoration: none; margin-top: 10px; display: inline-flex; align-items: center; gap: 4px; font-weight: 600; }
+  .reset-link:hover { text-decoration: underline; }
+
+  /* Summary Cards */
+  .cards4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  .card {
+    background: var(--surface);
+    backdrop-filter: blur(16px);
+    border: 1px solid var(--border);
+    border-radius: 18px; padding: 20px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+  }
+  .card:hover {
+    border-color: var(--border-glow);
+    transform: translateY(-3px);
+    box-shadow: 0 12px 35px rgba(0, 243, 255, 0.12);
+  }
+  .c-lbl {
+    font-size: 11px; color: var(--muted); margin-bottom: 10px;
+    display: flex; align-items: center; gap: 6px;
+    font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px;
+  }
+  .c-val { font-size: 20px; font-weight: 800; letter-spacing: -0.3px; }
+  .c-sub { font-size: 12px; color: var(--muted); margin-top: 6px; }
+  .c-val.mono { font-size: 15px; font-family: 'JetBrains Mono', monospace; color: var(--accent); }
+
+  /* Dynamic Risk Meter Visual */
+  .meter-bar-bg { width: 100%; height: 6px; background: rgba(255,255,255,0.08); border-radius: 10px; margin-top: 10px; overflow: hidden; }
+  .meter-bar-fill { height: 100%; width: 0%; border-radius: 10px; transition: width 1s ease-out, background 0.5s; }
+
+  /* Map Buttons */
+  .map-actions { display: flex; gap: 10px; margin-top: 14px; }
+  .btn-map {
+    flex: 1; background: var(--panel); border: 1px solid var(--border);
+    color: var(--text); padding: 8px 12px; border-radius: 10px;
+    font-size: 12px; font-weight: 700; cursor: pointer; text-align: center;
+    text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    transition: all 0.25s;
+  }
+  .btn-map:hover { background: rgba(0, 243, 255, 0.12); border-color: var(--accent); color: var(--accent); }
+
+  /* Bangladesh Card */
+  .bd-card { background: var(--surface); backdrop-filter: blur(16px); border: 1px solid var(--border); border-radius: 18px; padding: 20px; }
+  .bd-yes {
+    display: inline-flex; align-items: center; gap: 12px;
+    background: rgba(0, 255, 157, 0.12); border: 1px solid rgba(0, 255, 157, 0.4);
+    color: var(--green); padding: 12px 22px; border-radius: 12px; font-size: 16px; font-weight: 800;
+    box-shadow: 0 0 20px rgba(0, 255, 157, 0.2);
+  }
+  .bd-no {
+    display: inline-flex; align-items: center; gap: 12px;
+    background: rgba(30, 41, 66, 0.4); border: 1px solid var(--dim);
+    color: var(--muted); padding: 12px 22px; border-radius: 12px; font-size: 16px; font-weight: 800;
+  }
+
+  /* Navigation Tabs */
+  .tabbar {
+    display: flex; gap: 8px; background: var(--surface);
+    backdrop-filter: blur(16px); border: 1px solid var(--border);
+    border-radius: 16px; padding: 6px; overflow-x: auto;
+  }
+  .tbtn {
+    flex: 1; padding: 12px 18px; border-radius: 12px; border: none;
+    background: transparent; color: var(--muted); cursor: pointer;
+    font-size: 13px; font-weight: 700; transition: all 0.25s; white-space: nowrap;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .tbtn:hover { color: var(--text); background: rgba(255,255,255,0.03); }
+  .tbtn.on {
+    background: linear-gradient(135deg, rgba(0, 243, 255, 0.18), rgba(0, 119, 182, 0.25));
+    color: var(--accent); border: 1px solid rgba(0, 243, 255, 0.4);
+    box-shadow: 0 0 15px var(--accent-glow);
+  }
+
+  .tpane { display: none; flex-direction: column; gap: 18px; }
+  .tpane.on { display: flex; animation: fadeIn 0.35s ease-out; }
+
+  /* ELA Grid */
+  .ela-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .ela-box {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 14px; padding: 18px; text-align: center;
+    position: relative; overflow: hidden;
+  }
+  .ela-box img { max-width: 100%; max-height: 380px; border-radius: 10px; object-fit: contain; box-shadow: 0 5px 20px rgba(0,0,0,0.5); }
+  .ela-title { font-size: 12px; font-weight: 800; color: var(--muted); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.8px; }
+
+  /* EXIF Table */
+  .etable { width: 100%; border-collapse: collapse; }
+  .etable tr:nth-child(even) { background: rgba(255, 255, 255, 0.015); }
+  .etable td { padding: 11px 14px; font-size: 13px; border-bottom: 1px solid rgba(0, 243, 255, 0.08); }
+  .etable td:first-child { color: var(--muted); width: 35%; font-weight: 600; }
+  .etable td:last-child { font-family: 'JetBrains Mono', monospace; color: var(--accent); word-break: break-all; font-size: 12.5px; }
+
+  /* Anomaly Cards */
+  .anom-item {
+    background: var(--panel); border-left: 4px solid var(--warn);
+    border-radius: 10px; padding: 14px 18px; margin-bottom: 10px; font-size: 13px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+  }
+  .anom-item.HIGH { border-left-color: var(--danger); }
+  .anom-title { font-weight: 800; margin-bottom: 4px; font-size: 13.5px; }
+
+  /* Map */
+  #map { height: 380px; border-radius: 14px; border: 1px solid var(--border); box-shadow: 0 5px 20px rgba(0,0,0,0.4); }
+
+  /* OSINT Grid */
+  .osint-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; }
+  .osrc {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 14px; padding: 18px 12px; text-align: center;
+    transition: all 0.3s; cursor: pointer;
+  }
+  .osrc:hover { border-color: var(--accent); transform: translateY(-4px); box-shadow: 0 10px 25px var(--accent-glow); }
+  .os-ico { font-size: 28px; margin-bottom: 6px; }
+  .os-name { font-size: 13px; font-weight: 800; }
+  .os-desc { font-size: 11px; color: var(--muted); margin-top: 3px; }
+
+  /* Input fields */
+  .rinput {
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 10px; padding: 10px 14px; color: var(--text);
+    font-size: 13px; font-family: inherit; outline: none; transition: border 0.2s;
+  }
+  .rinput:focus { border-color: var(--accent); box-shadow: 0 0 12px var(--accent-glow); }
+  
+  .rbtn {
+    background: linear-gradient(135deg, var(--accent), #0077b6);
+    color: #020617; border: none; padding: 10px 20px; border-radius: 10px;
+    font-weight: 800; cursor: pointer; font-size: 13px; transition: all 0.2s;
+  }
+  .rbtn:hover { transform: scale(1.03); }
+
+  /* ── AI Agent Side Drawer ── */
+  .chat-drawer {
+    width: 420px; background: var(--surface);
+    backdrop-filter: blur(20px); border-left: 1px solid var(--border);
+    display: flex; flex-direction: column;
+    height: calc(100vh - 73px); position: sticky; top: 73px;
+    transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: -10px 0 30px rgba(0,0,0,0.5);
+  }
+  .chat-drawer.closed { display: none; }
+  .chat-hdr {
+    padding: 16px 20px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 12px; background: var(--panel);
+  }
+  .chat-hdr-title { font-size: 15px; font-weight: 800; flex: 1; }
+  .chat-select {
+    background: var(--bg); border: 1px solid var(--border);
+    color: var(--text); padding: 6px 10px; border-radius: 8px;
+    font-size: 11.5px; outline: none; font-weight: 600;
+  }
+  .chat-msgs {
+    flex: 1; padding: 20px; overflow-y: auto;
+    display: flex; flex-direction: column; gap: 14px;
+  }
+  .msg {
+    max-width: 90%; padding: 13px 16px; border-radius: 14px;
+    font-size: 12.5px; line-height: 1.65; white-space: pre-wrap;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+  }
+  .msg.user {
+    align-self: flex-end;
+    background: linear-gradient(135deg, var(--accent2), #5a189a);
+    color: #fff; border-bottom-right-radius: 4px;
+  }
+  .msg.agent {
+    align-self: flex-start; background: var(--panel);
+    border: 1px solid var(--border); color: var(--text);
+    border-bottom-left-radius: 4px;
+  }
+  .chat-in-row {
+    padding: 14px; border-top: 1px solid var(--border);
+    display: flex; gap: 10px; background: var(--panel);
+  }
+  .chat-input {
+    flex: 1; background: var(--bg); border: 1px solid var(--border);
+    border-radius: 10px; padding: 10px 14px; color: var(--text);
+    font-size: 12.5px; outline: none; font-family: inherit;
+  }
+  .chat-input:focus { border-color: var(--accent); }
+  .chat-send {
+    background: var(--accent); color: #020617; border: none;
+    padding: 10px 18px; border-radius: 10px; font-weight: 800;
+    cursor: pointer; font-size: 12.5px; transition: transform 0.2s;
+  }
+  .chat-send:hover { transform: scale(1.05); }
+
+  @media (max-width: 1150px) { .cards4 { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 900px) {
+    .layout { flex-direction: column; }
+    .chat-drawer { width: 100%; height: 500px; position: static; }
+    .ela-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Animated Motion Background Grid & Radial Orbs -->
+<div class="bg-grid"></div>
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<div class="orb orb-3"></div>
+
+<!-- Header -->
+<div class="hdr">
+  <div class="hdr-logo">🔍</div>
+  <div>
+    <div class="hdr-title">Image Forensics Pro</div>
+    <div class="hdr-sub">Deep Image Forensics, Metadata Inspector & AI Provenance Suite</div>
+  </div>
+  <div class="hdr-actions">
+    <div class="hdr-badge"><div class="pulse-dot"></div>🇧🇩 BD Geofence Active</div>
+    <div class="hdr-c2pa-badge">🛡️ C2PA & AI Engine v3.0</div>
+    <button class="chat-toggle-btn" onclick="toggleChat()">🤖 AI OSINT Agent</button>
+  </div>
+</div>
+
+<div class="layout">
+  <!-- Main Content Area -->
+  <div class="main-content">
+    
+    <!-- Upload Box with Scanning Motion Animation -->
+    <div id="uploadWrap">
+      <div class="scan-line"></div>
+      
+      <div class="radar-box">
+        <div class="radar-crosshair"></div>
+        <div class="radar-crosshair-h"></div>
+        <div class="radar-sweep"></div>
+      </div>
+
+      <div class="up-icon">🖼️</div>
+      <h2>Drop Target Image for Deep Forensics & Visual Intelligence</h2>
+      <p>ExifTool Inspector · Error Level Analysis (ELA) · C2PA & AI Authenticity · Copy-Move Forgery Detection · Steganography Scanner · Bangladesh Geofencing</p>
+      <button class="up-btn" onclick="event.stopPropagation(); fileIn.click()">📁 Select Image File</button>
+      <input type="file" id="fileIn" accept="image/*" style="display:none">
+    </div>
+
+    <!-- Main Dashboard -->
+    <div id="dash">
+
+      <!-- Preview Bar -->
+      <div class="prev-bar">
+        <div class="prev-img-wrap">
+          <img class="prev-img" id="prevImg" src="" alt="Uploaded target preview">
+        </div>
+        <div class="prev-info">
+          <div class="prev-name" id="prevName">—</div>
+          <div class="prev-meta" id="prevMeta">—</div>
+          <div class="pills" id="pillRow"></div>
+          <a class="reset-link" onclick="resetApp()">↩ Analyze another image</a>
+        </div>
+      </div>
+
+      <!-- 4 Summary Stat Cards -->
+      <div class="cards4">
+        <div class="card">
+          <div class="c-lbl">🌍 Location & Region</div>
+          <div class="c-val" id="cvCountry">—</div>
+          <div class="c-sub" id="cvCity">Awaiting analysis...</div>
+        </div>
+        <div class="card">
+          <div class="c-lbl">🤖 C2PA & AI Authenticity</div>
+          <div class="c-val" id="cvAi" style="font-size:17px">—</div>
+          <div class="c-sub" id="cvAiSub">Generative model scan</div>
+          <div class="meter-bar-bg"><div class="meter-bar-fill" id="meterAi"></div></div>
+        </div>
+        <div class="card">
+          <div class="c-lbl">🧩 Copy-Move Forgery</div>
+          <div class="c-val" id="cvCm" style="font-size:17px">—</div>
+          <div class="c-sub" id="cvCmSub">Duplicated block pairs</div>
+          <div class="meter-bar-bg"><div class="meter-bar-fill" id="meterCm"></div></div>
+        </div>
+        <div class="card">
+          <div class="c-lbl">🔒 Steganography LSB</div>
+          <div class="c-val" id="cvStego" style="font-size:17px">—</div>
+          <div class="c-sub" id="cvStegoSub">Bitplane entropy</div>
+          <div class="meter-bar-bg"><div class="meter-bar-fill" id="meterStego"></div></div>
+        </div>
+      </div>
+
+      <!-- Bangladesh Geographic Badge -->
+      <div class="bd-card">
+        <div class="c-lbl">🇧🇩 Bangladesh Geographic Bounding Box Verification</div>
+        <div id="bdResult">—</div>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <div class="tabbar">
+        <button class="tbtn on" onclick="switchTab('exif',this)">📋 ExifTool Metadata</button>
+        <button class="tbtn" onclick="switchTab('ela',this)">🧪 Error Level Analysis (ELA)</button>
+        <button class="tbtn" onclick="switchTab('c2pa',this)">🛡️ C2PA & AI Authenticity</button>
+        <button class="tbtn" onclick="switchTab('cmfd',this)">🧩 Copy-Move & Stego</button>
+        <button class="tbtn" onclick="switchTab('anom',this)">⚠️ Timeline Anomalies</button>
+        <button class="tbtn" onclick="switchTab('map',this)">🗺️ Location Map</button>
+        <button class="tbtn" onclick="switchTab('osint',this)">🔎 Social Triggers</button>
+      </div>
+
+      <!-- Tab 1: EXIF Inspector -->
+      <div id="pane-exif" class="tpane on">
+        <div class="card">
+          <div class="c-lbl" id="exifTitle">📋 Comprehensive Metadata Tags (ExifTool Layer)</div>
+          <table class="etable" id="exifTbl">
+            <tr><td colspan="2">Upload an image file to inspect EXIF metadata...</td></tr>
+          </table>
+        </div>
+      </div>
+
+      <!-- Tab 2: Error Level Analysis (ELA) -->
+      <div id="pane-ela" class="tpane">
+        <div class="card">
+          <div class="c-lbl">🧪 Digital Image Forensics & Tampering Inspection</div>
+          <div class="ela-grid">
+            <div class="ela-box">
+              <div class="ela-title">Original Target Image</div>
+              <img id="elaOrig" src="" alt="Original Image">
+            </div>
+            <div class="ela-box">
+              <div class="ela-title">Error Level Analysis (ELA 95%)</div>
+              <img id="elaRes" src="" alt="ELA Forensics Result">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 3: C2PA & AI Authenticity -->
+      <div id="pane-c2pa" class="tpane">
+        <div class="card">
+          <div class="c-lbl">🛡️ C2PA Content Credentials & AI-Generation Manifest Inspector</div>
+          <div id="c2paContent" style="font-size:13.5px;line-height:1.7;">Awaiting image upload...</div>
+        </div>
+      </div>
+
+      <!-- Tab 4: Copy-Move Forgery & Steganography -->
+      <div id="pane-cmfd" class="tpane">
+        <div class="card">
+          <div class="c-lbl">🧩 Copy-Move Block Duplication & LSB Steganography Scan</div>
+          <div id="cmfdContent" style="font-size:13.5px;line-height:1.7;">Awaiting image upload...</div>
+        </div>
+      </div>
+
+      <!-- Tab 5: Timeline & GPS Anomalies -->
+      <div id="pane-anom" class="tpane">
+        <div class="card">
+          <div class="c-lbl">⚠️ Chronological & GPS Sanity Anomaly Inspector</div>
+          <div id="anomContent" style="font-size:13.5px;line-height:1.7;">Awaiting image upload...</div>
+        </div>
+      </div>
+
+      <!-- Tab 6: Location Map -->
+      <div id="pane-map" class="tpane">
+        <div class="card">
+          <div class="c-lbl">🗺️ Interactive GIS Coordinates & Satellite Viewer</div>
+          <div id="map"></div>
+          <div class="map-actions">
+            <a class="btn-map" id="mapTabGmaps" target="_blank" href="#">🗺️ Google Maps</a>
+            <a class="btn-map" id="mapTabSat" target="_blank" href="#">🛰️ Satellite View</a>
+            <a class="btn-map" id="mapTabOsm" target="_blank" href="#">🌐 OpenStreetMap</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 7: OSINT Social Triggers -->
+      <div id="pane-osint" class="tpane">
+        <div class="card">
+          <div class="c-lbl">💡 Keywords & Target Search</div>
+          <div style="display:flex; gap:10px;">
+            <input class="rinput" id="kwIn" style="flex:1;" placeholder="Enter target keywords, username, Bengali text..." onkeyup="updateOsintLinks()">
+            <button class="rbtn" onclick="updateOsintLinks()">Update Links</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="c-lbl">🔗 Ethical Social Media & Reverse Search Launchers</div>
+          <div class="osint-grid" id="osintGrid"></div>
+        </div>
+      </div>
+
+    </div><!-- /dash -->
+  </div><!-- /main-content -->
+
+  <!-- Side Drawer: AI Forensic Agent Chat -->
+  <div class="chat-drawer" id="chatDrawer">
+    <div class="chat-hdr">
+      <span>🕵️</span>
+      <div class="chat-hdr-title">AI Forensic Investigator</div>
+      <select class="chat-select" id="modelSelect">
+        <option value="claude-3-5-sonnet">Claude 3.5 Sonnet</option>
+        <option value="llama3-ollama">Llama 3 (Local Ollama)</option>
+        <option value="gemma2-google">Google Gemma 2</option>
+      </select>
+    </div>
+    <div class="chat-msgs" id="chatMsgs">
+      <div class="msg agent">Hello! I am your AI Forensic Investigator. Upload an image to analyze EXIF tags, ELA compression, C2PA AI generation, Copy-Move forgery, and LSB steganography!</div>
+    </div>
+    <div class="chat-in-row">
+      <input class="chat-input" id="chatInput" placeholder="Ask AI Agent for a forensic verdict..." onkeypress="if(event.key==='Enter') sendAgentChat()">
+      <button class="chat-send" onclick="sendAgentChat()">Send</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+let currentContext = {};
+let mapObj = null;
+
+const uploadWrap = document.getElementById('uploadWrap');
+const fileIn     = document.getElementById('fileIn');
+
+uploadWrap.addEventListener('click', () => fileIn.click());
+uploadWrap.addEventListener('dragover', e => { e.preventDefault(); uploadWrap.classList.add('drag'); });
+uploadWrap.addEventListener('dragleave', () => uploadWrap.classList.remove('drag'));
+uploadWrap.addEventListener('drop', e => {
+  e.preventDefault(); uploadWrap.classList.remove('drag');
+  const f = e.dataTransfer.files[0];
+  if (f && f.type.startsWith('image/')) processImageUpload(f);
+});
+fileIn.addEventListener('change', e => { if (e.target.files[0]) processImageUpload(e.target.files[0]); });
+
+function toggleChat() {
+  document.getElementById('chatDrawer').classList.toggle('closed');
+}
+
+function resetApp() {
+  location.reload();
+}
+
+async function processImageUpload(file) {
+  uploadWrap.style.display = 'none';
+  document.getElementById('dash').classList.add('on');
+  document.getElementById('prevName').textContent = file.name;
+  document.getElementById('prevMeta').textContent = `${(file.size/1024).toFixed(1)} KB · ${file.type}`;
+  
+  const reader = new FileReader();
+  reader.onload = ev => {
+    document.getElementById('prevImg').src = ev.target.result;
+    document.getElementById('elaOrig').src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+
+  pill('exif', 'EXIF', 'run');
+  pill('ela', 'ELA', 'run');
+  pill('c2pa', 'C2PA', 'run');
+  pill('cmfd', 'CMFD', 'run');
+  
+  const formData = new FormData();
+  formData.append('file', file);
+  
+  try {
+    const res = await fetch('/api/analyze', { method: 'POST', body: formData });
+    if (!res.ok) throw new Error('API server unreachable');
+    const data = await res.json();
+    currentContext = data;
+    pill('exif', data.exif?.extractor_used || 'EXIF', 'ok');
+    pill('ela', 'ELA', 'ok');
+    pill('c2pa', data.c2pa_ai?.is_ai_generated ? 'AI Detect' : 'C2PA', 'ok');
+    pill('cmfd', 'CMFD', 'ok');
+    
+    renderResults(data);
+  } catch (err) {
+    pill('exif', 'Offline', 'err');
+    pill('ela', 'Offline', 'err');
+    console.warn('Backend error during analysis.', err);
+  }
+}
+
+function pill(id, label, state) {
+  const row = document.getElementById('pillRow');
+  let el = document.getElementById('p-' + id);
+  if (!el) { el = document.createElement('div'); el.id = 'p-' + id; row.appendChild(el); }
+  const cls = { run: 'pill-run', ok: 'pill-ok', err: 'pill-err' };
+  el.className = 'pill ' + cls[state];
+  el.textContent = label;
+}
+
+function renderResults(data) {
+  const exif = data.exif?.summary || {};
+  const raw = data.exif?.raw_tags || {};
+  const loc = data.location || {};
+  const ela = data.ela || {};
+  const c2pa = data.c2pa_ai || {};
+  const cm = data.copy_move || {};
+  const anom = data.anomalies || {};
+  const stego = data.steganography || {};
+
+  document.getElementById('exifTitle').textContent = `📋 Comprehensive Metadata Tags (${data.exif?.extractor_used || 'ExifTool Layer'})`;
+
+  // C2PA & AI Card
+  const aiVal = document.getElementById('cvAi');
+  const meterAi = document.getElementById('meterAi');
+  if (c2pa.is_ai_generated) {
+    aiVal.textContent = '🤖 AI Generated';
+    aiVal.style.color = 'var(--danger)';
+    document.getElementById('cvAiSub').textContent = c2pa.ai_generator_name || 'Generative Model';
+    meterAi.style.width = '95%';
+    meterAi.style.background = 'var(--danger)';
+  } else {
+    aiVal.textContent = '📷 Camera Capture';
+    aiVal.style.color = 'var(--green)';
+    document.getElementById('cvAiSub').textContent = 'No AI footprints';
+    meterAi.style.width = '10%';
+    meterAi.style.background = 'var(--green)';
+  }
+
+  // Copy-Move Card
+  const cmVal = document.getElementById('cvCm');
+  const meterCm = document.getElementById('meterCm');
+  if (cm.forgery_detected) {
+    cmVal.textContent = '🧩 Forgery Detected';
+    cmVal.style.color = 'var(--danger)';
+    document.getElementById('cvCmSub').textContent = `${cm.duplicated_keypoint_pairs} matched block pairs`;
+    meterCm.style.width = Math.min(100, (cm.duplicated_keypoint_pairs / 15) * 100) + '%';
+    meterCm.style.background = 'var(--danger)';
+  } else {
+    cmVal.textContent = 'Clean (No Duplication)';
+    cmVal.style.color = 'var(--green)';
+    document.getElementById('cvCmSub').textContent = 'No duplicated regions';
+    meterCm.style.width = '5%';
+    meterCm.style.background = 'var(--green)';
+  }
+
+  // Stego Card
+  const stegoVal = document.getElementById('cvStego');
+  const meterStego = document.getElementById('meterStego');
+  const entropyVal = stego.lsb_entropy || 0.0;
+  stegoVal.textContent = `Entropy: ${entropyVal}`;
+  meterStego.style.width = (entropyVal * 100) + '%';
+
+  if (stego.stego_suspected) {
+    stegoVal.style.color = 'var(--danger)';
+    document.getElementById('cvStegoSub').textContent = '⚠️ Hidden Payload Suspected';
+    meterStego.style.background = 'var(--danger)';
+  } else {
+    stegoVal.style.color = 'var(--text)';
+    document.getElementById('cvStegoSub').textContent = 'Normal LSB plane distribution';
+    meterStego.style.background = 'var(--accent)';
+  }
+
+  // ELA image
+  if (ela.ela_image_b64) {
+    document.getElementById('elaRes').src = ela.ela_image_b64;
+  }
+
+  // GPS Map
+  if (loc.latitude && loc.longitude) {
+    const lat = loc.latitude.toFixed(5);
+    const lon = loc.longitude.toFixed(5);
+    
+    const gmaps = `https://www.google.com/maps?q=${lat},${lon}`;
+    const sat = `https://www.google.com/maps/@${lat},${lon},18z/data=!3m1!1e3`;
+    const osm = `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lon}#map=16/${lat}/${lon}`;
+
+    document.getElementById('mapTabGmaps').href = gmaps;
+    document.getElementById('mapTabSat').href = sat;
+    document.getElementById('mapTabOsm').href = osm;
+
+    showMap(loc.latitude, loc.longitude);
+  }
+
+  if (loc.reverse_geocode?.address) {
+    const a = loc.reverse_geocode.address;
+    document.getElementById('cvCountry').textContent = (a.country || 'Unknown') + (loc.is_bangladesh ? ' 🇧🇩' : '');
+    document.getElementById('cvCity').textContent = [a.city || a.town || a.county, a.state].filter(Boolean).join(', ');
+  } else {
+    document.getElementById('cvCountry').textContent = loc.is_bangladesh ? 'Bangladesh 🇧🇩' : 'Unknown';
+  }
+
+  const bdEl = document.getElementById('bdResult');
+  if (loc.is_bangladesh) {
+    bdEl.innerHTML = `<div class="bd-yes">🇧🇩 Bangladesh Verified · Latitude ${loc.latitude?.toFixed(2)}° N</div>`;
+  } else {
+    bdEl.innerHTML = `<div class="bd-no">🌐 Location Outside Bangladesh / No GPS</div>`;
+  }
+
+  // Render C2PA Tab
+  document.getElementById('c2paContent').innerHTML = `
+    <div style="margin-bottom:14px;font-size:16px;font-weight:800;color:${c2pa.is_ai_generated ? 'var(--danger)' : 'var(--green)'};">
+      ${c2pa.is_ai_generated ? '🤖 AI-Generated Image Detected' : '📷 Natural Camera Capture (Authentic)'}
+    </div>
+    <div><strong>Confidence Level:</strong> ${c2pa.confidence || 'LOW'}</div>
+    <div><strong>C2PA Manifest Header:</strong> ${c2pa.c2pa_manifest_found ? 'Present (JUMBF Header Found)' : 'None'}</div>
+    <div><strong>AI Generator Name:</strong> ${c2pa.ai_generator_name || 'N/A'}</div>
+    <br>
+    <div style="font-weight:800;margin-bottom:8px;">Provenance & Forensic Findings:</div>
+    <ul style="padding-left:22px;">
+      ${(c2pa.provenance_details || []).map(d => `<li style="margin-bottom:4px;">${d}</li>`).join('')}
+    </ul>
+  `;
+
+  // Render CMFD & Stego Tab
+  document.getElementById('cmfdContent').innerHTML = `
+    <div style="margin-bottom:14px;font-size:16px;font-weight:800;color:${cm.forgery_detected ? 'var(--danger)' : 'var(--green)'};">
+      ${cm.forgery_detected ? '🧩 Copy-Move Region Duplication Detected' : '✅ No Copy-Move Forgery Detected'}
+    </div>
+    <div><strong>Duplicated Feature Pair Matches:</strong> ${cm.duplicated_keypoint_pairs || 0}</div>
+    <div><strong>Forgery Risk Score:</strong> ${cm.forgery_score || 0.0}</div>
+    <div><strong>CMFD Details:</strong> ${cm.details || 'N/A'}</div>
+    <hr style="border:0;border-top:1px solid var(--border);margin:16px 0;">
+    <div style="font-weight:800;margin-bottom:8px;font-size:14.5px;">🔒 Steganography LSB Bitplane Entropy:</div>
+    <div><strong>LSB Shannon Entropy ($H$):</strong> ${stego.lsb_entropy || 0.0} (Scale: 0.0 - 1.0)</div>
+    <div><strong>Ratio of 1-Bits in LSB:</strong> ${stego.lsb_bit_ratio_one || 'N/A'}</div>
+    <div><strong>Stego Status:</strong> ${stego.stego_suspected ? '<span style="color:var(--danger);font-weight:800;">⚠️ Hidden Payload Suspected</span>' : '<span style="color:var(--green);font-weight:800;">Normal Natural Bitplane</span>'}</div>
+    <div>${stego.details || ''}</div>
+  `;
+
+  // Render Timeline Anomalies Tab
+  document.getElementById('anomContent').innerHTML = anom.anomalies_detected
+    ? anom.flags.map(f => `
+        <div class="anom-item ${f.severity}">
+          <div class="anom-title">[${f.severity}] ${f.type}</div>
+          <div>${f.message}</div>
+        </div>
+      `).join('')
+    : '<div style="color:var(--green);font-size:14.5px;font-weight:800;">✅ No Chronological or GPS Coordinates Anomalies Found. Timestamp and spatial tags are clean.</div>';
+
+  // Render EXIF Table
+  const tableRows = [];
+  tableRows.push(['Camera Make', exif.make]);
+  tableRows.push(['Camera Model', exif.model]);
+  tableRows.push(['Date / Time', exif.datetime]);
+  tableRows.push(['ISO Speed', exif.iso]);
+  tableRows.push(['Shutter Speed', exif.shutter_speed]);
+  tableRows.push(['Aperture', exif.aperture]);
+  tableRows.push(['Focal Length', exif.focal_length]);
+  tableRows.push(['Serial Number', exif.serial_number]);
+  tableRows.push(['Software', exif.software]);
+
+  for (const [k, v] of Object.entries(raw)) {
+    if (!tableRows.some(([rk]) => rk === k)) tableRows.push([k, v]);
+  }
+
+  document.getElementById('exifTbl').innerHTML = tableRows.length
+    ? tableRows.map(([k, v]) => `<tr><td>${k}</td><td>${(v !== null && v !== undefined && v !== '') ? v : '—'}</td></tr>`).join('')
+    : '<tr><td colspan="2">No readable EXIF tags found.</td></tr>';
+
+  buildOsintGrid();
+}
+
+function showMap(lat, lon) {
+  if (mapObj) {
+    try { mapObj.remove(); } catch(e) {}
+    mapObj = null;
+  }
+  const container = document.getElementById('map');
+  if (container) container._leaflet_id = null;
+
+  setTimeout(() => {
+    try {
+      if (typeof L === 'undefined') {
+        if (container) container.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted);">Leaflet GIS library unavailable</div>';
+        return;
+      }
+      mapObj = L.map('map').setView([lat, lon], 14);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap'
+      }).addTo(mapObj);
+      
+      // Bangladesh Bounding Box Overlay
+      L.rectangle([[20.57, 88.01], [26.63, 92.67]], {
+        color: '#00ff9d', weight: 2, fill: true, fillColor: '#006a4e', fillOpacity: 0.1, dashArray: '6, 6'
+      }).addTo(mapObj);
+
+      L.marker([lat, lon]).addTo(mapObj).bindPopup(`📍 ${lat.toFixed(5)}, ${lon.toFixed(5)}`).openPopup();
+    } catch(e) { console.error('Map initialization error:', e); }
+  }, 200);
+}
+
+function switchTab(name, btn) {
+  document.querySelectorAll('.tbtn').forEach(b => b.classList.remove('on'));
+  document.querySelectorAll('.tpane').forEach(p => p.classList.remove('on'));
+  btn.classList.add('on');
+  document.getElementById('pane-' + name).classList.add('on');
+  if (name === 'map' && mapObj) setTimeout(() => mapObj.invalidateSize(), 120);
+}
+
+function buildOsintGrid() {
+  const kw = encodeURIComponent(document.getElementById('kwIn').value.trim() || '');
+  const sources = [
+    { ico: '🔍', name: 'Google Lens', url: 'https://lens.google.com' },
+    { ico: '🦊', name: 'Yandex Images', url: 'https://yandex.com/images/' },
+    { ico: '👁️', name: 'TinEye', url: 'https://tineye.com/' },
+    { ico: '🎭', name: 'PimEyes', url: 'https://pimeyes.com/' },
+    { ico: '📘', name: 'Facebook BD', url: `https://www.facebook.com/search/top?q=${kw || 'Bangladesh'}` },
+    { ico: '✈️', name: 'Telegram BD', url: `https://t.me/s/${kw || 'news'}` },
+    { ico: '🐙', name: 'GitHub', url: `https://github.com/search?q=${kw}` },
+    { ico: '👤', name: 'Sherlock OSINT', url: `https://whatsmyname.app/?q=${kw}` }
+  ];
+
+  document.getElementById('osintGrid').innerHTML = sources.map(s => `
+    <a class="osrc" href="${s.url}" target="_blank" style="text-decoration:none;color:inherit;">
+      <div class="os-ico">${s.ico}</div>
+      <div class="os-name">${s.name}</div>
+      <div class="os-desc">Launch Search</div>
+    </a>
+  `).join('');
+}
+
+function updateOsintLinks() { buildOsintGrid(); }
+
+async function sendAgentChat() {
+  const input = document.getElementById('chatInput');
+  const txt = input.value.trim();
+  if (!txt) return;
+  
+  const msgs = document.getElementById('chatMsgs');
+  msgs.innerHTML += `<div class="msg user">${txt}</div>`;
+  input.value = '';
+  msgs.scrollTop = msgs.scrollHeight;
+
+  const selectedModel = document.getElementById('modelSelect').value;
+  
+  try {
+    const res = await fetch('/api/agent/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message: txt,
+        model: selectedModel,
+        image_context: currentContext
+      })
+    });
+    const data = await res.json();
+    msgs.innerHTML += `<div class="msg agent">${data.reply}</div>`;
+  } catch (e) {
+    msgs.innerHTML += `<div class="msg agent">⚠️ Agent Error: Could not connect to backend server.</div>`;
+  }
+  msgs.scrollTop = msgs.scrollHeight;
+}
+</script>
+</body>
+</html>
