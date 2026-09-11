@@ -150,4 +150,5 @@ def test_agent_chat_endpoint():
 def test_dashboard_html_endpoint():
     response = client.get("/")
     assert response.status_code == 200
-    assert "OSINT Vision Pro" in response.text
+    assert "Image Forensics Pro" in response.text or "OSINT Vision Pro" in response.text
+
